@@ -1268,26 +1268,50 @@ async def get_dashboard_data(current_user = Depends(get_current_user)):
             "notifications": []
         }
         
-        # Get user's enrollments
-        enrollments_cursor = db.enrollments.find({"student_id": current_user["id"]})
-        enrollments = await enrollments_cursor.to_list(length=None)
-        
-        # Get school information for each enrollment
-        for enrollment in enrollments:
-            school = await db.driving_schools.find_one({"id": enrollment["driving_school_id"]})
+        if current_user["role"] == "manager":
+            # Manager dashboard - show pending enrollments for approval
+            # Get manager's driving school
+            school = await db.driving_schools.find_one({"manager_id": current_user["id"]})
             if school:
-                enrollment["school_name"] = school["name"]
-                enrollment["school_address"] = school["address"]
-        
-        dashboard_data["enrollments"] = serialize_doc(enrollments)
-        
-        # Get courses for approved enrollments
-        if enrollments:
-            enrollment_ids = [e["id"] for e in enrollments if e["enrollment_status"] == "approved"]
-            if enrollment_ids:
-                courses_cursor = db.courses.find({"enrollment_id": {"$in": enrollment_ids}})
-                courses = await courses_cursor.to_list(length=None)
-                dashboard_data["courses"] = serialize_doc(courses)
+                # Get pending enrollments for this school
+                enrollments_cursor = db.enrollments.find({
+                    "driving_school_id": school["id"],
+                    "enrollment_status": {"$in": ["pending_approval", "approved", "rejected"]}
+                })
+                enrollments = await enrollments_cursor.to_list(length=None)
+                
+                # Get student information for each enrollment
+                for enrollment in enrollments:
+                    student = await db.users.find_one({"id": enrollment["student_id"]})
+                    if student:
+                        enrollment["student_name"] = f"{student['first_name']} {student['last_name']}"
+                        enrollment["student_email"] = student["email"]
+                        enrollment["student_phone"] = student["phone"]
+                    enrollment["school_name"] = school["name"]
+                
+                dashboard_data["enrollments"] = serialize_doc(enrollments)
+                dashboard_data["school"] = serialize_doc(school)
+        else:
+            # Student dashboard - show their enrollments
+            enrollments_cursor = db.enrollments.find({"student_id": current_user["id"]})
+            enrollments = await enrollments_cursor.to_list(length=None)
+            
+            # Get school information for each enrollment
+            for enrollment in enrollments:
+                school = await db.driving_schools.find_one({"id": enrollment["driving_school_id"]})
+                if school:
+                    enrollment["school_name"] = school["name"]
+                    enrollment["school_address"] = school["address"]
+            
+            dashboard_data["enrollments"] = serialize_doc(enrollments)
+            
+            # Get courses for approved enrollments
+            if enrollments:
+                enrollment_ids = [e["id"] for e in enrollments if e["enrollment_status"] == "approved"]
+                if enrollment_ids:
+                    courses_cursor = db.courses.find({"enrollment_id": {"$in": enrollment_ids}})
+                    courses = await courses_cursor.to_list(length=None)
+                    dashboard_data["courses"] = serialize_doc(courses)
         
         # Get recent notifications
         notifications_cursor = db.notifications.find(
