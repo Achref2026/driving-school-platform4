@@ -1412,14 +1412,8 @@ async def approve_enrollment(
         if not school:
             raise HTTPException(status_code=403, detail="Unauthorized to approve this enrollment")
         
-        # Check if student has uploaded all required documents
-        documents_complete = await check_user_documents_complete(
-            enrollment["student_id"], 
-            "student"
-        )
-        
-        if not documents_complete:
-            raise HTTPException(status_code=400, detail="Student has not uploaded all required documents")
+        # Optional: Check if student has uploaded documents (not verification required)
+        # Manager can approve without verification, but can optionally view documents
         
         # Approve enrollment
         await db.enrollments.update_one(
