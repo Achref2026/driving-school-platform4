@@ -1269,3 +1269,43 @@ body {
 .bg-gradient-modern {
   background: var(--gradient-primary) !important;
 }
+
+/* Status Badges */
+.status-pending-approval {
+  background-color: var(--warning-yellow) !important;
+  color: #ffffff !important;
+}
+
+.status-approved {
+  background-color: var(--success-green) !important;
+  color: #ffffff !important;
+}
+
+.status-rejected {
+  background-color: var(--danger-red) !important;
+  color: #ffffff !important;
+}
+
+.status-pending-documents {
+  background-color: #6b7280 !important;
+  color: #ffffff !important;
+}
+
+/* Enrollment Card Styles */
+.enrollment-card {
+  transition: all 0.3s ease;
+  border: 1px solid var(--border-gray) !important;
+}
+
+.enrollment-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.enrollment-actions .btn {
+  transition: all 0.2s ease;
+}
+
+.enrollment-actions .btn:hover {
+  transform: translateY(-1px);
+}
