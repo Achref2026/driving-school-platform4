@@ -585,6 +585,70 @@ function App() {
     }
   };
 
+  // Handle enrollment approval (Manager)
+  const handleApproveEnrollment = async (enrollmentId) => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await axios.post(
+        `${backendUrl}/api/manager/enrollments/${enrollmentId}/approve`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      setSuccessMessage('Enrollment approved successfully!');
+      fetchDashboardData(); // Refresh dashboard
+    } catch (error) {
+      console.error('Approval error:', error);
+      setGlobalError(error.response?.data?.detail || 'Failed to approve enrollment');
+    }
+  };
+
+  // Handle enrollment rejection (Manager)
+  const handleRejectEnrollment = async (enrollmentId, reason = 'No reason provided') => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const formData = new FormData();
+      formData.append('reason', reason);
+      
+      const response = await axios.post(
+        `${backendUrl}/api/manager/enrollments/${enrollmentId}/reject`,
+        formData,
+        { 
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          } 
+        }
+      );
+      
+      setSuccessMessage('Enrollment rejected successfully!');
+      fetchDashboardData(); // Refresh dashboard
+    } catch (error) {
+      console.error('Rejection error:', error);
+      setGlobalError(error.response?.data?.detail || 'Failed to reject enrollment');
+    }
+  };
+
+  // View student documents (Manager)
+  const [selectedStudentDocs, setSelectedStudentDocs] = useState(null);
+  const [showDocumentsModal, setShowDocumentsModal] = useState(false);
+
+  const handleViewStudentDocuments = async (studentId) => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await axios.get(
+        `${backendUrl}/api/manager/student-documents/${studentId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      setSelectedStudentDocs(response.data);
+      setShowDocumentsModal(true);
+    } catch (error) {
+      console.error('View documents error:', error);
+      setGlobalError(error.response?.data?.detail || 'Failed to fetch student documents');
+    }
+  };
+
   // Filter handlers
   const handleFilterChange = (key, value) => {
     const newFilters = { ...filters, [key]: value };
