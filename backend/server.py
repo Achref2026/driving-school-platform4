@@ -1379,6 +1379,46 @@ async def get_user_documents(current_user = Depends(get_current_user)):
         logger.error(f"Get documents error: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch documents")
 
+@api_router.get("/manager/student-documents/{student_id}")
+async def get_student_documents(
+    student_id: str,
+    current_user = Depends(get_current_user)
+):
+    """Manager endpoint to view student documents"""
+    try:
+        if current_user["role"] != "manager":
+            raise HTTPException(status_code=403, detail="Only managers can access this")
+        
+        # Verify student is enrolled in manager's school
+        school = await db.driving_schools.find_one({"manager_id": current_user["id"]})
+        if not school:
+            raise HTTPException(status_code=404, detail="School not found")
+        
+        enrollment = await db.enrollments.find_one({
+            "student_id": student_id,
+            "driving_school_id": school["id"]
+        })
+        if not enrollment:
+            raise HTTPException(status_code=403, detail="Student not enrolled in your school")
+        
+        # Get student documents
+        documents_cursor = db.documents.find({"user_id": student_id})
+        documents = await documents_cursor.to_list(length=None)
+        
+        # Get student info
+        student = await db.users.find_one({"id": student_id})
+        
+        return {
+            "documents": serialize_doc(documents),
+            "student": serialize_doc(student) if student else None
+        }
+    
+    except Exception as e:
+        logger.error(f"Get student documents error: {str(e)}")
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=500, detail="Failed to fetch student documents")
+
 # Manager Routes
 @api_router.get("/manager/enrollments")
 async def get_pending_enrollments(current_user = Depends(get_current_user)):
