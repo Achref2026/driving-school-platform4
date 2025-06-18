@@ -2004,6 +2004,7 @@ function App() {
 
       {/* Modals */}
       {renderAuthModal()}
+      {renderDocumentsModal()}
       
       {/* Offline Quiz Modal */}
       {showOfflineQuiz && (
