@@ -1419,7 +1419,9 @@ function App() {
                   <div className="stat-number display-6 fw-bold text-primary">
                     {dashboardData?.enrollments?.length || 0}
                   </div>
-                  <div className="stat-label text-muted">Active Enrollments</div>
+                  <div className="stat-label text-muted">
+                    {user?.role === 'manager' ? 'Total Enrollments' : 'Active Enrollments'}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1428,129 +1430,241 @@ function App() {
         
         {dashboardData ? (
           <div className="dashboard-content">
-            <div className="row g-4">
-              <div className="col-lg-8">
-                <div className="card shadow-sm">
-                  <div className="card-header bg-white">
-                    <h3 className="card-title fw-bold mb-0">Your Enrollments</h3>
-                  </div>
-                  <div className="card-body">
-                    {dashboardData.enrollments && dashboardData.enrollments.length > 0 ? (
-                      <div className="enrollments-list">
-                        {dashboardData.enrollments.map((enrollment) => (
-                          <div key={enrollment.id} className="enrollment-card p-4 border rounded-3 mb-3">
-                            <div className="d-flex justify-content-between align-items-start mb-3">
-                              <div>
-                                <h4 className="fw-bold mb-2">
-                                  {enrollment.school_name}
-                                </h4>
-                                <p className="text-muted mb-0">
-                                  <i className="fas fa-calendar-alt me-2"></i>
-                                  Enrolled: {new Date(enrollment.created_at).toLocaleDateString()}
-                                </p>
+            {user?.role === 'manager' ? (
+              // Manager Dashboard
+              <div className="row g-4">
+                <div className="col-lg-12">
+                  <div className="card shadow-sm">
+                    <div className="card-header bg-white">
+                      <h3 className="card-title fw-bold mb-0">Student Enrollments - {dashboardData.school?.name}</h3>
+                    </div>
+                    <div className="card-body">
+                      {dashboardData.enrollments && dashboardData.enrollments.length > 0 ? (
+                        <div className="enrollments-list">
+                          {dashboardData.enrollments.map((enrollment) => (
+                            <div key={enrollment.id} className="enrollment-card p-4 border rounded-3 mb-3">
+                              <div className="d-flex justify-content-between align-items-start mb-3">
+                                <div className="flex-grow-1">
+                                  <h4 className="fw-bold mb-2">
+                                    {enrollment.student_name}
+                                  </h4>
+                                  <p className="text-muted mb-1">
+                                    <i className="fas fa-envelope me-2"></i>
+                                    {enrollment.student_email}
+                                  </p>
+                                  <p className="text-muted mb-1">
+                                    <i className="fas fa-phone me-2"></i>
+                                    {enrollment.student_phone}
+                                  </p>
+                                  <p className="text-muted mb-0">
+                                    <i className="fas fa-calendar-alt me-2"></i>
+                                    Applied: {new Date(enrollment.created_at).toLocaleDateString()}
+                                  </p>
+                                </div>
+                                <span className={`badge fs-6 px-3 py-2 status-${enrollment.enrollment_status.replace('_', '-')}`}>
+                                  {enrollment.enrollment_status.replace('_', ' ').toUpperCase()}
+                                </span>
                               </div>
-                              <span className={`badge fs-6 px-3 py-2 status-${enrollment.enrollment_status.replace('_', '-')}`}>
-                                {enrollment.enrollment_status.replace('_', ' ').toUpperCase()}
-                              </span>
+                              
+                              {enrollment.enrollment_status === 'pending_approval' && (
+                                <div className="alert alert-warning mb-3">
+                                  <i className="fas fa-clock me-2"></i>
+                                  This enrollment is awaiting your approval
+                                </div>
+                              )}
+                              
+                              {enrollment.enrollment_status === 'approved' && (
+                                <div className="alert alert-success mb-3">
+                                  <i className="fas fa-check-circle me-2"></i>
+                                  Enrollment approved - Student can start courses
+                                </div>
+                              )}
+
+                              {enrollment.enrollment_status === 'rejected' && (
+                                <div className="alert alert-danger mb-3">
+                                  <i className="fas fa-times-circle me-2"></i>
+                                  Enrollment was rejected
+                                </div>
+                              )}
+                              
+                              <div className="enrollment-actions d-flex gap-2 flex-wrap">
+                                <button
+                                  onClick={() => handleViewStudentDocuments(enrollment.student_id)}
+                                  className="btn btn-outline-info btn-sm"
+                                >
+                                  <i className="fas fa-file-alt me-1"></i>
+                                  View Documents
+                                </button>
+                                
+                                {enrollment.enrollment_status === 'pending_approval' && (
+                                  <>
+                                    <button
+                                      onClick={() => handleApproveEnrollment(enrollment.id)}
+                                      className="btn btn-success btn-sm"
+                                    >
+                                      <i className="fas fa-check me-1"></i>
+                                      Accept
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        const reason = prompt('Please provide a reason for rejection (optional):') || 'No reason provided';
+                                        handleRejectEnrollment(enrollment.id, reason);
+                                      }}
+                                      className="btn btn-danger btn-sm"
+                                    >
+                                      <i className="fas fa-times me-1"></i>
+                                      Refuse
+                                    </button>
+                                  </>
+                                )}
+                              </div>
                             </div>
-                            
-                            {enrollment.enrollment_status === 'pending_documents' && (
-                              <div className="alert alert-info">
-                                <i className="fas fa-info-circle me-2"></i>
-                                Please upload required documents for approval
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-5">
+                          <i className="fas fa-user-graduate fa-4x text-muted mb-4"></i>
+                          <h5 className="fw-bold mb-3">No enrollments yet</h5>
+                          <p className="text-muted mb-4">Students will appear here when they enroll in your driving school</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              // Student Dashboard
+              <div className="row g-4">
+                <div className="col-lg-8">
+                  <div className="card shadow-sm">
+                    <div className="card-header bg-white">
+                      <h3 className="card-title fw-bold mb-0">Your Enrollments</h3>
+                    </div>
+                    <div className="card-body">
+                      {dashboardData.enrollments && dashboardData.enrollments.length > 0 ? (
+                        <div className="enrollments-list">
+                          {dashboardData.enrollments.map((enrollment) => (
+                            <div key={enrollment.id} className="enrollment-card p-4 border rounded-3 mb-3">
+                              <div className="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                  <h4 className="fw-bold mb-2">
+                                    {enrollment.school_name}
+                                  </h4>
+                                  <p className="text-muted mb-0">
+                                    <i className="fas fa-calendar-alt me-2"></i>
+                                    Enrolled: {new Date(enrollment.created_at).toLocaleDateString()}
+                                  </p>
+                                </div>
+                                <span className={`badge fs-6 px-3 py-2 status-${enrollment.enrollment_status.replace('_', '-')}`}>
+                                  {enrollment.enrollment_status.replace('_', ' ').toUpperCase()}
+                                </span>
                               </div>
-                            )}
-                            
-                            {enrollment.enrollment_status === 'approved' && (
-                              <div className="alert alert-success">
-                                <i className="fas fa-check-circle me-2"></i>
-                                Enrollment approved! You can start your courses.
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-5">
-                        <i className="fas fa-graduation-cap fa-4x text-muted mb-4"></i>
-                        <h5 className="fw-bold mb-3">No enrollments yet</h5>
-                        <p className="text-muted mb-4">Find a driving school to get started with your journey!</p>
+                              
+                              {enrollment.enrollment_status === 'pending_approval' && (
+                                <div className="alert alert-info">
+                                  <i className="fas fa-clock me-2"></i>
+                                  Your enrollment is awaiting approval from the driving school manager
+                                </div>
+                              )}
+                              
+                              {enrollment.enrollment_status === 'approved' && (
+                                <div className="alert alert-success">
+                                  <i className="fas fa-check-circle me-2"></i>
+                                  Enrollment approved! You can start your courses.
+                                </div>
+                              )}
+
+                              {enrollment.enrollment_status === 'rejected' && (
+                                <div className="alert alert-danger">
+                                  <i className="fas fa-times-circle me-2"></i>
+                                  Your enrollment was rejected. Please contact the driving school for more information.
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-5">
+                          <i className="fas fa-graduation-cap fa-4x text-muted mb-4"></i>
+                          <h5 className="fw-bold mb-3">No enrollments yet</h5>
+                          <p className="text-muted mb-4">Find a driving school to get started with your journey!</p>
+                          <button
+                            onClick={() => {
+                              setCurrentPage('schools');
+                              fetchDrivingSchools();
+                            }}
+                            className="btn btn-primary"
+                          >
+                            <i className="fas fa-search me-2"></i>
+                            Find Schools
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="col-lg-4">
+                  <div className="card shadow-sm">
+                    <div className="card-header bg-white">
+                      <h3 className="card-title fw-bold mb-0">Quick Actions</h3>
+                    </div>
+                    <div className="card-body">
+                      <div className="quick-actions d-grid gap-3">
                         <button
                           onClick={() => {
                             setCurrentPage('schools');
                             fetchDrivingSchools();
                           }}
-                          className="btn btn-primary"
+                          className="btn btn-primary btn-lg"
                         >
                           <i className="fas fa-search me-2"></i>
-                          Find Schools
+                          Find Driving Schools
+                        </button>
+                        
+                        <button
+                          onClick={() => setCurrentPage('home')}
+                          className="btn btn-outline-secondary btn-lg"
+                        >
+                          <i className="fas fa-home me-2"></i>
+                          Back to Home
                         </button>
                       </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="col-lg-4">
-                <div className="card shadow-sm">
-                  <div className="card-header bg-white">
-                    <h3 className="card-title fw-bold mb-0">Quick Actions</h3>
-                  </div>
-                  <div className="card-body">
-                    <div className="quick-actions d-grid gap-3">
-                      <button
-                        onClick={() => {
-                          setCurrentPage('schools');
-                          fetchDrivingSchools();
-                        }}
-                        className="btn btn-primary btn-lg"
-                      >
-                        <i className="fas fa-search me-2"></i>
-                        Find Driving Schools
-                      </button>
-                      
-                      <button
-                        onClick={() => setCurrentPage('home')}
-                        className="btn btn-outline-secondary btn-lg"
-                      >
-                        <i className="fas fa-home me-2"></i>
-                        Back to Home
-                      </button>
                     </div>
                   </div>
-                </div>
 
-                {/* User Profile Card */}
-                <div className="card shadow-sm mt-4">
-                  <div className="card-header bg-white">
-                    <h3 className="card-title fw-bold mb-0">Profile</h3>
-                  </div>
-                  <div className="card-body">
-                    <div className="profile-info">
-                      <div className="text-center mb-4">
-                        <div className="profile-avatar bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style={{width: '80px', height: '80px', fontSize: '2rem'}}>
-                          {user?.first_name?.charAt(0) || 'U'}
+                  {/* User Profile Card */}
+                  <div className="card shadow-sm mt-4">
+                    <div className="card-header bg-white">
+                      <h3 className="card-title fw-bold mb-0">Profile</h3>
+                    </div>
+                    <div className="card-body">
+                      <div className="profile-info">
+                        <div className="text-center mb-4">
+                          <div className="profile-avatar bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style={{width: '80px', height: '80px', fontSize: '2rem'}}>
+                            {user?.first_name?.charAt(0) || 'U'}
+                          </div>
                         </div>
-                      </div>
-                      <div className="profile-details">
-                        <div className="detail-item mb-3">
-                          <label className="form-label fw-bold">Name</label>
-                          <p className="mb-0">{user?.first_name} {user?.last_name}</p>
-                        </div>
-                        <div className="detail-item mb-3">
-                          <label className="form-label fw-bold">Email</label>
-                          <p className="mb-0">{user?.email}</p>
-                        </div>
-                        <div className="detail-item mb-3">
-                          <label className="form-label fw-bold">Role</label>
-                          <p className="mb-0 text-capitalize">{user?.role}</p>
+                        <div className="profile-details">
+                          <div className="detail-item mb-3">
+                            <label className="form-label fw-bold">Name</label>
+                            <p className="mb-0">{user?.first_name} {user?.last_name}</p>
+                          </div>
+                          <div className="detail-item mb-3">
+                            <label className="form-label fw-bold">Email</label>
+                            <p className="mb-0">{user?.email}</p>
+                          </div>
+                          <div className="detail-item mb-3">
+                            <label className="form-label fw-bold">Role</label>
+                            <p className="mb-0 text-capitalize">{user?.role}</p>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         ) : (
           <div className="loading-section text-center py-5">
