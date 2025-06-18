@@ -1678,6 +1678,107 @@ function App() {
     </div>
   );
 
+  // Student Documents Modal (for managers)
+  const renderDocumentsModal = () => (
+    showDocumentsModal && selectedStudentDocs && (
+      <div 
+        className="modal show d-block" 
+        style={{backgroundColor: 'rgba(0, 0, 0, 0.75)'}}
+        tabIndex="-1"
+      >
+        <div className="modal-dialog modal-lg modal-dialog-centered">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title">
+                Student Documents - {selectedStudentDocs.student?.first_name} {selectedStudentDocs.student?.last_name}
+              </h5>
+              <button
+                type="button"
+                className="btn-close"
+                onClick={() => {
+                  setShowDocumentsModal(false);
+                  setSelectedStudentDocs(null);
+                }}
+              ></button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="student-info mb-4 p-3 bg-light rounded">
+                <h6 className="fw-bold mb-2">Student Information</h6>
+                <div className="row">
+                  <div className="col-md-6">
+                    <p><strong>Email:</strong> {selectedStudentDocs.student?.email}</p>
+                    <p><strong>Phone:</strong> {selectedStudentDocs.student?.phone}</p>
+                  </div>
+                  <div className="col-md-6">
+                    <p><strong>Address:</strong> {selectedStudentDocs.student?.address}</p>
+                    <p><strong>Date of Birth:</strong> {selectedStudentDocs.student?.date_of_birth}</p>
+                  </div>
+                </div>
+              </div>
+
+              <h6 className="fw-bold mb-3">Uploaded Documents</h6>
+              {selectedStudentDocs.documents && selectedStudentDocs.documents.length > 0 ? (
+                <div className="documents-list">
+                  {selectedStudentDocs.documents.map((doc) => (
+                    <div key={doc.id} className="document-item p-3 border rounded mb-3">
+                      <div className="d-flex justify-content-between align-items-center">
+                        <div>
+                          <h6 className="mb-1">{doc.document_type.replace('_', ' ').toUpperCase()}</h6>
+                          <p className="text-muted mb-1">
+                            <small>
+                              <i className="fas fa-file me-1"></i>
+                              {doc.file_name}
+                            </small>
+                          </p>
+                          <p className="text-muted mb-0">
+                            <small>
+                              <i className="fas fa-calendar me-1"></i>
+                              Uploaded: {new Date(doc.upload_date).toLocaleDateString()}
+                            </small>
+                          </p>
+                        </div>
+                        <div className="text-end">
+                          <a 
+                            href={doc.file_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="btn btn-outline-primary btn-sm"
+                          >
+                            <i className="fas fa-eye me-1"></i>
+                            View
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <i className="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                  <p className="text-muted">No documents uploaded yet</p>
+                </div>
+              )}
+            </div>
+            
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => {
+                  setShowDocumentsModal(false);
+                  setSelectedStudentDocs(null);
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  );
+
   // Auth Modal Component
   const renderAuthModal = () => (
     showAuthModal && (
