@@ -616,26 +616,46 @@ async def create_sequential_courses(enrollment_id: str):
 
 # Cloudinary upload function
 async def upload_to_cloudinary(file: UploadFile, folder: str, resource_type: str = "auto"):
-    """Upload file to Cloudinary"""
+    """Upload file to Cloudinary or local demo storage"""
     try:
-        file_content = await file.read()
-        
-        upload_result = cloudinary.uploader.upload(
-            file_content,
-            folder=folder,
-            resource_type=resource_type,
-            public_id=f"{str(uuid.uuid4())}_{file.filename}",
-            overwrite=True
-        )
-        
-        return {
-            "file_url": upload_result["secure_url"],
-            "public_id": upload_result["public_id"],
-            "file_size": upload_result.get("bytes", 0),
-            "format": upload_result.get("format", ""),
-            "width": upload_result.get("width"),
-            "height": upload_result.get("height")
-        }
+        # Check if Cloudinary is configured
+        if not os.environ.get('CLOUDINARY_CLOUD_NAME') or os.environ.get('CLOUDINARY_CLOUD_NAME') == 'dummy':
+            # Fallback to local storage for demo
+            file_content = await file.read()
+            filename = f"{str(uuid.uuid4())}_{file.filename}"
+            file_path = demo_uploads_dir / filename
+            
+            async with aiofiles.open(file_path, 'wb') as f:
+                await f.write(file_content)
+            
+            return {
+                "file_url": f"/demo-uploads/{filename}",
+                "public_id": filename,
+                "file_size": len(file_content),
+                "format": file.filename.split('.')[-1] if '.' in file.filename else "",
+                "width": None,
+                "height": None
+            }
+        else:
+            # Use Cloudinary
+            file_content = await file.read()
+            
+            upload_result = cloudinary.uploader.upload(
+                file_content,
+                folder=folder,
+                resource_type=resource_type,
+                public_id=f"{str(uuid.uuid4())}_{file.filename}",
+                overwrite=True
+            )
+            
+            return {
+                "file_url": upload_result["secure_url"],
+                "public_id": upload_result["public_id"],
+                "file_size": upload_result.get("bytes", 0),
+                "format": upload_result.get("format", ""),
+                "width": upload_result.get("width"),
+                "height": upload_result.get("height")
+            }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to upload file: {str(e)}")
 
